@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 from torch.utils.data.dataset import Dataset
 
 from foolbox.attacks import FGSM, SinglePixelAttack, BoundaryAttack, LBFGSAttack, ProjectedGradientDescent
-from models.cifar import PreActResNet
+from models.cifar import PreActResNet, PResNetReg
 
 def load_net_cifar(model_loc):
     """ Make a model
@@ -48,8 +48,13 @@ def net_from_args(args, num_classes, IM_SIZE):
     elif (args.net_type == 'resnet'):
         net = ResNet(args.depth, num_classes, IM_SIZE)
         file_name = 'resnet-'+str(args.depth)
-    elif (model_name == 'preact_resnet'):
-        model = PreActResNet(args.depth, num_classes)
+    elif (args.net_type == 'preact_resnet'):
+        if args.frac != 1:
+            net = PResNetReg(args.depth, args.frac, args.groups, num_classes)
+            file_name = 'preact_resnet-'+str(args.depth)+'-'+str(args.frac)+'-'+str(args.groups)
+        else:
+            net = PreActResNet(args.depth, num_classes)
+            file_name = 'preact_resnet-'+str(args.depth)
     elif (args.net_type == 'wide-resnet'):
         net = Wide_ResNet(args.depth, args.widen_factor, args.dropout, num_classes, IM_SIZE)
         file_name = 'wide-resnet-'+str(args.depth)+'x'+str(args.widen_factor)

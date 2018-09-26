@@ -1,19 +1,17 @@
-'''
+'''Adding spatial top k to Pre-activation ResNet in PyTorch.
 
-??? check if used if not just a subset of the regularized model
+Mostly meany for p-resnet18
 
-
-Pre-activation ResNet in PyTorch.
 Reference:
 [1] Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun
     Identity Mappings in Deep Residual Networks. arXiv:1603.05027
-
 Based off this: https://github.com/kuangliu/pytorch-cifar/blob/master/models/preact_resnet.py
 '''
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from models.SpatialTopK import SpatialTopK
 
 
 class PreActBlock(nn.Module):
@@ -69,9 +67,9 @@ class PreActBottleneck(nn.Module):
         return out
 
 
-class PreActResNet(nn.Module):
-    def __init__(self, depth, num_classes=10):
-        super(PreActResNet, self).__init__()
+class PResNetReg(nn.Module):
+    def __init__(self, depth, frac=None, groups=1, num_classes=10):
+        super(PResNetReg, self).__init__()
         self.in_planes = 64
 
         block, num_blocks = cfg(depth)
@@ -83,6 +81,9 @@ class PreActResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.linear = nn.Linear(512*block.expansion, num_classes)
 
+        if frac:
+            self.topk_layer = SpatialTopK(topk=1, frac=frac, groups=groups)
+
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
@@ -92,11 +93,19 @@ class PreActResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
+        if self.topk_layer:
+            out = self.topk_layer(self.conv1(x))
+            out = self.topk_layer(self.layer1(out))
+            out = self.topk_layer(self.layer2(out))
+            out = self.topk_layer(self.layer3(out))
+            out = self.topk_layer(self.layer4(out))
+        else:
+            out = self.conv1(x)
+            out = self.layer1(out)
+            out = self.layer2(out)
+            out = self.layer3(out)
+            out = self.layer4(out)
+
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)

@@ -46,7 +46,7 @@ class FilesDFImageDataset(Dataset):
             loc = (self.files[self.path_colname].iloc[index], self.files[self.adv_path_colname].iloc[index])
             return img, adv_img, label, loc
         elif not self.adv_path_colname and not self.return_loc:
-            return img, label
+            return img, label 
         elif not self.adv_path_colname and self.return_loc:
             loc = self.files[self.path_colname].iloc[index]
             return img, label, loc
