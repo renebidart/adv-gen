@@ -8,3 +8,4 @@ Designed for 32x32 images, not exactly the same as the standard imagenet models.
 from .resnet import *
 from .preact_resnet import PreActResNet
 from .p_resnet_reg import PResNetReg
+from .PResNetRegNoRelU import PResNetRegNoRelU

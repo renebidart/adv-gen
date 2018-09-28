@@ -15,14 +15,16 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data.dataset import Dataset
 
+import foolbox
 from foolbox.attacks import FGSM, SinglePixelAttack, BoundaryAttack, LBFGSAttack, ProjectedGradientDescent
-from models.cifar import PreActResNet, PResNetReg
+from models.cifar import PreActResNet, PResNetReg, PResNetRegNoRelU
+from models.TestNet import TestNetNotResNet, TestNetMostlyResNet
 
 def load_net_cifar(model_loc):
     """ Make a model
     Network must be saved in the form model_name-depth, where this is a unique identifier
     """
-    model_file = Path(model_loc).name.rsplit('_')[0]
+    model_file = Path(model_loc).name.split('/')[-1]
     model_name = model_file.split('-')[0]
     print('Loading model_file', model_file)
     if (model_name == 'vggnet'):
@@ -30,9 +32,16 @@ def load_net_cifar(model_loc):
     elif (model_name == 'resnet'):
         model = ResNet(int(model_file.split('-')[1]), 10)
     elif (model_name == 'preact_resnet'):
-        model = PreActResNet(int(model_file.split('-')[1]), 10)
+        print(model_file.split('-'))
+        model = PResNetReg(int(model_file.split('-')[1]), float(model_file.split('-')[2]), 1, 10)
     elif (model_name == 'wide'):
         model = Wide_ResNet(model_file.split('-')[2][0:2], model_file.split('-')[2][2:4], 0, 10, 32)
+    
+    # Dumb ones
+    elif (model_name == 'PResNetRegNoRelU'):
+        print(model_file.split('-'))
+        model = PResNetRegNoRelU(int(model_file.split('-')[1]), float(model_file.split('-')[2]), 1, 10)
+    
     else:
         print('Error : Network should be either [VGGNet / ResNet / Wide_ResNet')
         sys.exit(0)
@@ -58,8 +67,28 @@ def net_from_args(args, num_classes, IM_SIZE):
     elif (args.net_type == 'wide-resnet'):
         net = Wide_ResNet(args.depth, args.widen_factor, args.dropout, num_classes, IM_SIZE)
         file_name = 'wide-resnet-'+str(args.depth)+'x'+str(args.widen_factor)
+
+    elif (args.net_type == 'PResNetRegNoRelU'):
+        net = PResNetRegNoRelU(args.depth, args.frac, args.groups, num_classes)
+        file_name = 'PResNetRegNoRelU-'+str(args.depth)+'-'+str(args.frac)+'-'+str(args.groups)
+
+    elif (args.net_type == 'TestNetNotResNet'):
+        net = TestNetNotResNet()
+        file_name = 'TestNetNotResNet'
+    elif (args.net_type == 'TestNetMostlyResNet'):
+        net = TestNetMostlyResNet()
+        file_name = 'TestNetMostlyResNet'
+    elif (args.net_type == 'TestNetResnetTopK'):
+        net = TestNetResnetTopK()
+        file_name = 'TestNetResnetTopK'
+    elif (args.net_type == 'TestNetResnetTopKEverywhere'):
+        net = TestNetResnetTopKEverywhere()
+        file_name = 'TestNetResnetTopKEverywhere'
+    elif (args.net_type == 'TestNetResnetTopK_act'):
+        net = TestNetResnetTopK_act()
+        file_name = 'TestNetResnetTopK_act'
     else:
-        print('Error : Network should be either [VGGNet / ResNet / PreActResNet/ Wide_ResNet')
+        print('Error : Wrong net type')
         sys.exit(0)
     return net, file_name
 

@@ -1,0 +1,5 @@
+python train_net_cifar.py --files_df_loc /media/rene/data/adv_consistency/cifar10/cifar10_normal/files_df.pkl --SAVE_PATH /media/rene/data/adv_consistency/cifar10/cifar10_normal/models --net_type PResNetRegNoRelU --depth 34 --dropout 0 --batch_size 512 --lr .2 --frac .05 --groups 1 --device "cuda:1" --epochs 300
+
+python train_net_cifar.py --files_df_loc /media/rene/data/adv_consistency/cifar10/cifar10_normal/files_df.pkl --SAVE_PATH /media/rene/data/adv_consistency/cifar10/cifar10_normal/models --net_type PResNetRegNoRelU --depth 18 --dropout 0 --batch_size 512 --lr .2 --frac .05 --groups 1 --device "cuda:1" --epochs 300
+
+python make_adv_data.py --files_df_loc /media/rene/data/adv_consistency/cifar10/cifar10_normal/files_df.pkl --NEW_PATH /media/rene/data/adv_consistency/cifar10/adv_fgsm/preact_resnet-18-0.05-1/ --model_loc /media/rene/data/adv_consistency/cifar10/cifar10_normal/models/preact_resnet-18-0.05-1_ckpnt.pth.tar --attack_type FGSM --device cuda:1
