@@ -14,7 +14,7 @@ from PIL import Image
 
 
 class FilesDFImageDataset(Dataset):
-    def __init__(self, files_df, transforms=None, path_colname='path', adv_path_colname=None, return_loc=False):
+    def __init__(self, files_df, transforms=None, path_colname='path', adv_path_colname=None, return_loc=False, bw=False):
         """
         files_df: Pandas Dataframe containing the class and path of an image
         transforms: result of transforms.Compose()
@@ -26,10 +26,14 @@ class FilesDFImageDataset(Dataset):
         self.path_colname = path_colname
         self.adv_path_colname = adv_path_colname
         self.return_loc = return_loc
+        self.bw = bw
 
 
     def __getitem__(self, index):
-        img = Image.open(self.files[self.path_colname].iloc[index]).convert('RGB') # incase of greyscale
+        if self.bw:
+            img = Image.open(self.files[self.path_colname].iloc[index])
+        else:
+            img = Image.open(self.files[self.path_colname].iloc[index]).convert('RGB') # incase of greyscale
         label =  self.files['class'].iloc[index]
         if self.transforms is not None:
             img = self.transforms(img)
@@ -69,6 +73,7 @@ def make_generators_DF_cifar(files_df, batch_size, num_workers, size=32,
             transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
         ]),
         'val': transforms.Compose([
+            transforms.Resize(size),
             transforms.ToTensor(),
             transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
         ]),
@@ -78,6 +83,38 @@ def make_generators_DF_cifar(files_df, batch_size, num_workers, size=32,
 
     datasets = {x: FilesDFImageDataset(files_df[x], data_transforms[x], path_colname=path_colname, 
                                         adv_path_colname=adv_path_colname, return_loc=return_loc)
+                                        for x in list(data_transforms.keys())}
+
+    dataloaders = {x: torch.utils.data.DataLoader(datasets[x], batch_size=batch_size, 
+                                                    shuffle=True, num_workers=num_workers)
+                                                    for x in list(data_transforms.keys())}
+    return dataloaders
+
+
+
+def make_generators_DF_MNIST(files_df, batch_size, num_workers, size=32, 
+                          path_colname='path', adv_path_colname=None, return_loc=False, bw=True):
+    """
+    files_df: Dict containing train and val Pandas Dataframes
+    Uses standard cifar augmentation and nomalization.
+    """
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.Resize(size),
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize(size),
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ]),
+    }
+    datasets = {}
+    dataloaders = {}
+
+    datasets = {x: FilesDFImageDataset(files_df[x], data_transforms[x], path_colname=path_colname, 
+                                        adv_path_colname=adv_path_colname, return_loc=return_loc, bw=True)
                                         for x in list(data_transforms.keys())}
 
     dataloaders = {x: torch.utils.data.DataLoader(datasets[x], batch_size=batch_size, 

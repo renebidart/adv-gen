@@ -94,7 +94,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, device):
     return top1.avg, losses.avg
 
 
-def validate_epoch(val_loader, model, criterion, device):
+def validate_epoch(val_loader, model, device='cpu', criterion=None):
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -108,20 +108,22 @@ def validate_epoch(val_loader, model, criterion, device):
         for i, batch in enumerate(val_loader):
             inputs, target = batch[0].to(device), batch[1].to(device)
             output = model(inputs)
-            loss = criterion(output, target)
+            if criterion:
+                loss = criterion(output, target)
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output, target, topk=(1, 5))
-            losses.update(loss.item(), inputs.size(0))
+            if criterion:
+                losses.update(loss.item(), inputs.size(0))
             top1.update(prec1[0], inputs.size(0))
             top5.update(prec5[0], inputs.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
-            
+
     print(f'VALID:  * TOP1 {top1.avg:.3f} TOP5 {top5.avg:.3f} Loss ({losses.avg:.4f})\t',
-          f'Time ({batch_time.avg:.3f})\t')
+            f'Time ({batch_time.avg:.3f})\t')
     return top1.avg, losses.avg
 
 
