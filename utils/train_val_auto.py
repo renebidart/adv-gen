@@ -26,7 +26,7 @@ def train_epoch_auto(epoch, lr, loader, model, optimizer, criterion, device):
     
     for i, (inputs, label) in enumerate(loader):
         data_time.update(time.time() - end)
-        inputs, label = inputs.to(device), label.to(device)
+        inputs, label = inputs.to(device), label.type(torch.LongTensor).to(device)
 
         output = model(inputs, label)
         loss = criterion(output, inputs)
@@ -55,7 +55,7 @@ def validate_epoch_auto(loader, model, criterion, device):
     with torch.no_grad():
         end = time.time()
         for i, (inputs, label) in enumerate(loader):
-            inputs, label = inputs.to(device), label.to(device)
+            inputs, label = inputs.to(device), label.type(torch.LongTensor).to(device)
             output = model(inputs, label)
             loss = criterion(output, inputs)
 

@@ -72,9 +72,8 @@ def main(args):
         print(f'--------- Training: {model_name} with layer sizes {args.layer_sizes} ---------')
 
         # get training parameters and train:
-        criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=lr)
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/3), gamma=0.2) # close enough
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/3), gamma=0.4) # close enough
         
         metrics = {}
         metrics['train_losses'] = []

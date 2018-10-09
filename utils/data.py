@@ -14,7 +14,8 @@ from PIL import Image
 
 
 class FilesDFImageDataset(Dataset):
-    def __init__(self, files_df, transforms=None, path_colname='path', adv_path_colname=None, return_loc=False, bw=False):
+    def __init__(self, files_df, transforms=None, path_colname='path', adv_path_colname=None, 
+                  label=None, return_loc=False, bw=False):
         """
         files_df: Pandas Dataframe containing the class and path of an image
         transforms: result of transforms.Compose()
@@ -22,12 +23,14 @@ class FilesDFImageDataset(Dataset):
         path_colname: Name of colum containing locations
         """
         self.files = files_df
+        if isinstance(label, int):
+            self.files = self.files.loc[self.files['class'] == int(label)]
+            print(f'Creating dataloader with only label {label}')
         self.transforms = transforms
         self.path_colname = path_colname
         self.adv_path_colname = adv_path_colname
         self.return_loc = return_loc
         self.bw = bw
-
 
     def __getitem__(self, index):
         if self.bw:
@@ -60,7 +63,7 @@ class FilesDFImageDataset(Dataset):
 
 
 def make_generators_DF_cifar(files_df, batch_size, num_workers, size=32, 
-                          path_colname='path', adv_path_colname=None, return_loc=False):
+                          path_colname='path', adv_path_colname=None, label=None, return_loc=False):
     """
     files_df: Dict containing train and val Pandas Dataframes
     Uses standard cifar augmentation and nomalization.
@@ -82,7 +85,7 @@ def make_generators_DF_cifar(files_df, batch_size, num_workers, size=32,
     dataloaders = {}
 
     datasets = {x: FilesDFImageDataset(files_df[x], data_transforms[x], path_colname=path_colname, 
-                                        adv_path_colname=adv_path_colname, return_loc=return_loc)
+                                        adv_path_colname=adv_path_colname, label=label, return_loc=return_loc)
                                         for x in list(data_transforms.keys())}
 
     dataloaders = {x: torch.utils.data.DataLoader(datasets[x], batch_size=batch_size, 
@@ -93,7 +96,7 @@ def make_generators_DF_cifar(files_df, batch_size, num_workers, size=32,
 
 
 def make_generators_DF_MNIST(files_df, batch_size, num_workers, size=32, 
-                          path_colname='path', adv_path_colname=None, return_loc=False, bw=True):
+                          path_colname='path', adv_path_colname=None, label=None, return_loc=False, bw=True):
     """
     files_df: Dict containing train and val Pandas Dataframes
     Uses standard cifar augmentation and nomalization.
@@ -114,7 +117,7 @@ def make_generators_DF_MNIST(files_df, batch_size, num_workers, size=32,
     dataloaders = {}
 
     datasets = {x: FilesDFImageDataset(files_df[x], data_transforms[x], path_colname=path_colname, 
-                                        adv_path_colname=adv_path_colname, return_loc=return_loc, bw=True)
+                                        adv_path_colname=adv_path_colname, label=label, return_loc=return_loc, bw=True)
                                         for x in list(data_transforms.keys())}
 
     dataloaders = {x: torch.utils.data.DataLoader(datasets[x], batch_size=batch_size, 

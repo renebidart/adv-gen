@@ -14,31 +14,51 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 #########   DISPLAYING UTILS
-def load_image(img_path, size=32):
-    """Load jpg image into format for Foolbox"""
-    img = np.asarray(Image.open(img_path).convert('RGB').resize((size, size), Image.ANTIALIAS))
-    img = np.moveaxis(img, 2, 0) / 255.
-    return img.astype('float32')
 
-def show_img(image, adversarial):
-    """Ajdust foolbox format to matplotlib format and olot"""
-    image = np.moveaxis(image, 0, 2)
-    adversarial = np.moveaxis(adversarial, 0, 2)
-    difference = adversarial - image
+def read_img_to_np(img_path, bw=False):
+    size = 32
+    if bw:
+        img = np.asarray(Image.open(img_path))
+    else:
+        img = np.asarray(Image.open(img_path).convert('RGB').resize((size, size), Image.ANTIALIAS))
+    img = img / 255.
+    return img
+
+def torch_to_np(img):
+    """image tensor -> numpy format to display (channels last, 0-1)"""
+    img = img.cpu().detach().numpy()
+    img = np.squeeze(img)
+    if len(img.shape)>2:
+        img = np.moveaxis(img, 0, 2)
+    img = np.moveaxis(img, -1, 0)
+    return img
+
+
+# def load_image(img_path, size=32):
+#     """Load jpg image into format for Foolbox"""
+#     img = np.asarray(Image.open(img_path).convert('RGB').resize((size, size), Image.ANTIALIAS))
+#     img = np.moveaxis(img, 2, 0) / 255.
+#     return img.astype('float32')
+
+# def show_img(image, adversarial):
+#     """Ajdust foolbox format to matplotlib format and olot"""
+#     image = np.moveaxis(image, 0, 2)
+#     adversarial = np.moveaxis(adversarial, 0, 2)
+#     difference = adversarial - image
     
-    plt.figure(figsize=(10,10))
-    plt.subplot(1, 3, 1)
-    plt.title('Original')
-    plt.imshow( image)  # division by 255 to convert [0, 255] to [0, 1]
-    plt.axis('off')
+#     plt.figure(figsize=(10,10))
+#     plt.subplot(1, 3, 1)
+#     plt.title('Original')
+#     plt.imshow( image)  # division by 255 to convert [0, 255] to [0, 1]
+#     plt.axis('off')
 
-    plt.subplot(1, 3, 2)
-    plt.title('Adversarial')
-    plt.imshow( adversarial)  # ::-1 to convert BGR to RGB
-    plt.axis('off')
+#     plt.subplot(1, 3, 2)
+#     plt.title('Adversarial')
+#     plt.imshow( adversarial)  # ::-1 to convert BGR to RGB
+#     plt.axis('off')
 
-    plt.subplot(1, 3, 3)
-    plt.title('Difference')
-    plt.imshow(difference / abs(difference).max() * 0.2 + 0.5)
-    plt.axis('off')
-    plt.show()
+#     plt.subplot(1, 3, 3)
+#     plt.title('Difference')
+#     plt.imshow(difference / abs(difference).max() * 0.2 + 0.5)
+#     plt.axis('off')
+#     plt.show()

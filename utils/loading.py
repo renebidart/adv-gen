@@ -19,7 +19,8 @@ import foolbox
 from foolbox.attacks import FGSM, SinglePixelAttack, BoundaryAttack, LBFGSAttack, ProjectedGradientDescent
 from models.cifar import PreActResNet, PResNetReg, PResNetRegNoRelU
 from models.TestNet import TestNetNotResNet, TestNetMostlyResNet
-from models.vae import CVAE
+from models.cvae import CVAE
+from models.vae import VAE
 
 def vae_from_args(args):
     if (args.net_type == 'cvae'):
@@ -27,6 +28,10 @@ def vae_from_args(args):
                     layer_sizes=args.layer_sizes)
         sizes_str =  "_".join(str(x) for x in args.layer_sizes)
         file_name = 'CVAE-'+str(sizes_str)+'-'+str(args.latent_size)+'-'+str(args.dataset)+'-'+str(args.num_labels)
+    if (args.net_type == 'vae'):
+        net = VAE(latent_size=args.latent_size, img_size=args.IM_SIZE, layer_sizes=args.layer_sizes)
+        sizes_str =  "_".join(str(x) for x in args.layer_sizes)
+        file_name = 'VAE-'+str(sizes_str)+'-'+str(args.latent_size)+'-'+str(args.dataset)
     else:
         print('Error : Wrong net type')
         sys.exit(0)
