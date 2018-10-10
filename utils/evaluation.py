@@ -15,6 +15,7 @@ from PIL import Image
 
 from utils.data import make_generators_DF_cifar
 
+
 def evaluate_adv_files_df(files_df, denoise_model, device):
     results = pd.DataFrame()
     

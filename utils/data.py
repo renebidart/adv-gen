@@ -99,7 +99,6 @@ def make_generators_DF_MNIST(files_df, batch_size, num_workers, size=32,
                           path_colname='path', adv_path_colname=None, label=None, return_loc=False, bw=True):
     """
     files_df: Dict containing train and val Pandas Dataframes
-    Uses standard cifar augmentation and nomalization.
     """
     data_transforms = {
         'train': transforms.Compose([

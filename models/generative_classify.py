@@ -17,7 +17,7 @@ def VAE_test_loss(recon_x, mu, logsigma, x, KLD_weight=1):
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD = -0.5 * torch.sum(1 + 2 * logsigma - mu.pow(2) - (2 * logsigma).exp())
-    loss = BCE+KLD_weight*KLD
+    loss = Variable(BCE+KLD_weight*KLD, requires_grad=True)
     return loss, BCE, KLD
 
     
@@ -112,10 +112,12 @@ def gen_classify_cvae(img, labels, model, num_times, iterations, latent_size, de
 
             rand_mu = np.random.normal(0,1, (1, latent_size))
             rand_logvar = np.random.normal(0,1, (1, latent_size))
-            mu = torch.tensor(rand_mu, device=device, requires_grad=True).type(torch.cuda.FloatTensor)
-            logvar = torch.tensor(rand_logvar, device=device, requires_grad=True).type(torch.cuda.FloatTensor)
-            mu = Variable(mu.data, requires_grad=True)
-            logvar = Variable(logvar.data, requires_grad=True)
+            # mu = torch.tensor(rand_mu, device=device, requires_grad=True).type(torch.cuda.FloatTensor)
+            # logvar = torch.tensor(rand_logvar, device=device, requires_grad=True).type(torch.cuda.FloatTensor)
+            # mu = Variable(mu.data, requires_grad=True)
+            # logvar = Variable(logvar.data, requires_grad=True)
+            mu = torch.from_numpy(rand_mu).float().to(device)
+            logvar = torch.from_numpy(rand_logvar).float().to(device)
 
             recon_x, z, loss, BCE_list, KLD_list = optimize_latent_cvae(img, tensor_label, mu, logvar, model, 
                                                                         lr=.001, iterations=iterations, KLD_weight=KLD_weight)

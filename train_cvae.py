@@ -62,7 +62,7 @@ def main(args):
             dataloaders = make_generators_DF_cifar(files_df, batch_size, num_workers, size=IM_SIZE, 
                                                     path_colname='path', adv_path_colname=None, return_loc=False)
         elif args.dataset == 'MNIST':
-            dataloaders = make_generators_DF_MNIST(files_df, batch_size, num_workers, size=IM_SIZE, 
+            dataloaders = make_generators_DF_MNIST(files_df, batch_size, num_workers, size=IM_SIZE,
                                                     path_colname='path', adv_path_colname=None, return_loc=False, bw=True)
 
         # get the network
