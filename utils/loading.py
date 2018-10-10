@@ -72,9 +72,14 @@ def load_net_cifar(model_loc):
 def load_net(model_loc):
     model_file = Path(model_loc).name
     model_name = model_file.split('-')[0]
+
     if (model_name == 'CVAE'):
         model = CVAE(num_labels=int(model_file.split('-')[4].split('_')[0]),
                      latent_size=int(model_file.split('-')[2]), 
+                     img_size=32,
+                     layer_sizes=[int(i) for i in model_file.split('-')[1].split('_')])
+    elif (model_name == 'VAE'):
+        model = VAE(latent_size=int(model_file.split('-')[2]),
                      img_size=32,
                      layer_sizes=[int(i) for i in model_file.split('-')[1].split('_')])
     else:

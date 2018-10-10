@@ -30,8 +30,33 @@ def torch_to_np(img):
     img = np.squeeze(img)
     if len(img.shape)>2:
         img = np.moveaxis(img, 0, 2)
-    img = np.moveaxis(img, -1, 0)
+    # img = np.moveaxis(img, -1, 0)
     return img
+
+def show_imgs(imgs, labels, cols = 3):
+    if not isinstance(imgs, np.ndarray):#convert torch to numpy
+        imgs = torch_to_np(imgs)
+        imgs = np.moveaxis(imgs, -1, 0)
+        
+    if not isinstance(labels, np.ndarray):#convert torch to numpy
+        labels = torch_to_np(labels)
+        labels = np.moveaxis(labels, 0, -1)
+
+    n_imgs = imgs.shape[0]
+    fig = plt.figure()
+    for i in range(n_imgs):
+        ax = fig.add_subplot(cols, np.ceil(n_imgs/float(cols)), i + 1)
+        img = np.squeeze(imgs[i, :, :])
+        label = np.squeeze(labels[i])
+        plt.gray()
+        plt.imshow(img)
+        plt.axis('off')
+        ax.set_title(label, fontsize=60)
+    fig.set_size_inches(np.array(fig.get_size_inches()) * n_imgs)
+    fig.tight_layout()
+    plt.show()
+
+
 
 
 # def load_image(img_path, size=32):

@@ -70,7 +70,7 @@ class CVAE(nn.Module):
     def loss(self, output, inputs):
         x = inputs
         recon_x, mu, logsigma = output
-        BCE = F.mse_loss(recon_x, x, size_average=False)
+        BCE = F.mse_loss(recon_x, x, reduction='sum')
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
         # https://arxiv.org/abs/1312.6114

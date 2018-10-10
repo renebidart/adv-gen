@@ -39,18 +39,18 @@ class VAE(nn.Module):
             self.decoder.append(self.leakyrelu)
         self.decoder = nn.Sequential(*self.decoder)
 
-    def forward(self, x, c, training=True):
-        mu, logvar = self.encode(x, c)
+    def forward(self, x, training=True):
+        mu, logvar = self.encode(x)
         z = self.reparameterize(mu, logvar)
-        recon_x = self.decode(z, c)
+        recon_x = self.decode(z)
         return recon_x, mu, logvar
 
-    def encode(self, x, c):
+    def encode(self, x):
         x = self.encoder(x)
         x = x.view(x.size(0), -1)
         return self.fc_mu(x), self.fc_logvar(x)
 
-    def decode(self, x, c): # this is messy, really should put fc1 and decoder together into one thing.
+    def decode(self, x): # this is messy, really should put fc1 and decoder together into one thing.
         x = self.fc1(x)
         x = x.view((-1, self.layer_sizes[-1], self.final_im_size, self.final_im_size))
         x = self.decoder(x)
@@ -67,13 +67,13 @@ class VAE(nn.Module):
     def loss(self, output, inputs):
         x = inputs
         recon_x, mu, logsigma = output
-        BCE = F.mse_loss(recon_x, x, size_average=False)
+        BCE = F.mse_loss(recon_x, x, reduction='sum')
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
         # https://arxiv.org/abs/1312.6114
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD = -0.5 * torch.sum(1 + 2 * logsigma - mu.pow(2) - (2 * logsigma).exp())
-        return BCE + 2*KLD
+        return BCE + KLD
 
 # what the fuck
 class Interpolate(nn.Module):
