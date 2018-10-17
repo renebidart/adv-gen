@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from torch.autograd import Variable
 
 
 class VAE(nn.Module):
@@ -39,9 +40,9 @@ class VAE(nn.Module):
             self.decoder.append(self.leakyrelu)
         self.decoder = nn.Sequential(*self.decoder)
 
-    def forward(self, x, training=True):
+    def forward(self, x, deterministic=False):
         mu, logvar = self.encode(x)
-        z = self.reparameterize(mu, logvar)
+        z = self.reparameterize(mu, logvar, deterministic=deterministic)
         recon_x = self.decode(z)
         return recon_x, mu, logvar
 
@@ -56,24 +57,35 @@ class VAE(nn.Module):
         x = self.decoder(x)
         return torch.sigmoid(x)
 
-    def reparameterize(self, mu, logvar, inference=False):
-        if inference:
+    def reparameterize(self, mu, logvar, deterministic=False):
+        if deterministic:
             return mu
         else:
             std = torch.exp(0.5*logvar)
             eps = torch.randn_like(std)
             return eps.mul(std).add_(mu)
 
-    def loss(self, output, inputs):
-        x = inputs
-        recon_x, mu, logsigma = output
+    # def loss(self, output, inputs):
+    #     x = inputs
+    #     recon_x, mu, logsigma = output
+    #     BCE = F.mse_loss(recon_x, x, reduction='sum')
+    #     # see Appendix B from VAE paper:
+    #     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+    #     # https://arxiv.org/abs/1312.6114
+    #     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+    #     KLD = -0.5 * torch.sum(1 + 2 * logsigma - mu.pow(2) - (2 * logsigma).exp())
+    #     return BCE + KLD
+
+    def loss(self, output, x, KLD_weight=1):
+        recon_x, mu, logvar = output
         BCE = F.mse_loss(recon_x, x, reduction='sum')
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
         # https://arxiv.org/abs/1312.6114
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-        KLD = -0.5 * torch.sum(1 + 2 * logsigma - mu.pow(2) - (2 * logsigma).exp())
-        return BCE + KLD
+        KLD = -0.5 * torch.sum(1 + 2 * logvar - mu.pow(2) - (2 * logvar).exp())
+        loss = Variable(BCE+KLD_weight*KLD, requires_grad=True)
+        return loss
 
 # what the fuck
 class Interpolate(nn.Module):

@@ -28,7 +28,7 @@ parser.add_argument('--device', type=str)
 
 # Defining the network:
 parser.add_argument('--net_type', default='vae', type=str, help='model')
-parser.add_argument('--layer_sizes','--list', nargs='+', help='<Required> Set flag', required=True)
+parser.add_argument('--layer_sizes','--list', nargs='+')
 parser.add_argument('--latent_size', default=32, type=int, help='model')
 parser.add_argument('--dropout', default=0, type=float, help='dropout_rate')
 parser.add_argument('--frac', default=1, type=float, help='frac to reatain in topk')
@@ -45,7 +45,8 @@ args = parser.parse_args()
 
 def main(args):
     with torch.cuda.device(1): # ??? Remove this:
-        args.layer_sizes = [int(i) for i in args.layer_sizes]
+        if args.layer_sizes:
+            args.layer_sizes = [int(i) for i in args.layer_sizes]
         epochs, batch_size, lr, num_workers = int(args.epochs), int(args.batch_size), float(args.lr),  int(args.num_workers)
         num_labels, IM_SIZE= int(args.num_labels), int(args.IM_SIZE)
         device = torch.device(args.device)

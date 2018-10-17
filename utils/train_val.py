@@ -71,7 +71,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, device):
         # measure data loading time
         data_time.update(time.time() - end)
         
-        inputs, target = inputs.to(device), target.to(device)
+        inputs, target = inputs.to(device), target.type(torch.LongTensor).to(device)
         output = model(inputs)
         loss = criterion(output, target)
 
@@ -105,8 +105,8 @@ def validate_epoch(val_loader, model, device='cpu', criterion=None):
 
     with torch.no_grad():
         end = time.time()
-        for i, batch in enumerate(val_loader):
-            inputs, target = batch[0].to(device), batch[1].to(device)
+        for i, (inputs, target)  in enumerate(val_loader):
+            inputs, target = inputs.to(device), target.type(torch.LongTensor).to(device)
             output = model(inputs)
             if criterion:
                 loss = criterion(output, target)

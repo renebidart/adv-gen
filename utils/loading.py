@@ -17,10 +17,14 @@ from torch.utils.data.dataset import Dataset
 
 import foolbox
 from foolbox.attacks import FGSM, SinglePixelAttack, BoundaryAttack, LBFGSAttack, ProjectedGradientDescent
+from foolbox.attacks import SaltAndPepperNoiseAttack, AdditiveGaussianNoiseAttack, PointwiseAttack
+
+
 from models.cifar import PreActResNet, PResNetReg, PResNetRegNoRelU
 from models.TestNet import TestNetNotResNet, TestNetMostlyResNet
-from models.cvae import CVAE
+from models.cvae import CVAE 
 from models.vae import VAE
+from models.vae_general import VAE_ABS
 
 def vae_from_args(args):
     if (args.net_type == 'cvae'):
@@ -32,6 +36,9 @@ def vae_from_args(args):
         net = VAE(latent_size=args.latent_size, img_size=args.IM_SIZE, layer_sizes=args.layer_sizes)
         sizes_str =  "_".join(str(x) for x in args.layer_sizes)
         file_name = 'VAE-'+str(sizes_str)+'-'+str(args.latent_size)+'-'+str(args.dataset)
+    elif (args.net_type == 'VAE_ABS'):
+        net = VAE_ABS(latent_size=args.latent_size, img_size=args.IM_SIZE)
+        file_name = 'VAE_ABS-'+str(args.latent_size)+'-'+str(args.dataset)
     else:
         print('Error : Wrong net type')
         sys.exit(0)
@@ -82,6 +89,8 @@ def load_net(model_loc):
         model = VAE(latent_size=int(model_file.split('-')[2]),
                      img_size=32,
                      layer_sizes=[int(i) for i in model_file.split('-')[1].split('_')])
+    elif (model_name == 'VAE_ABS'):
+        model = VAE_ABS(latent_size=8, img_size=28)
     else:
         print(f'Error : {model_file} not found')
         sys.exit(0)
@@ -144,6 +153,12 @@ def get_attack(attack_type, fmodel):
         attack  = foolbox.attacks.LBFGSAttack(fmodel)
     elif (attack_type == 'pgd'):
         attack  = foolbox.attacks.ProjectedGradientDescent(fmodel)
+    elif (attack_type == 'saltpepper'):
+        attack  = foolbox.attacks.SaltAndPepperNoiseAttack(fmodel)
+    elif (attack_type == 'gaussian'):
+        attack  = foolbox.attacks.AdditiveGaussianNoiseAttack(fmodel)
+    elif (attack_type == 'pointwise'):
+        attack  = foolbox.attacks.PointwiseAttack(fmodel)
     else:
         print('Error: Invalid attack_type')
         sys.exit(0)

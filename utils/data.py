@@ -96,22 +96,27 @@ def make_generators_DF_cifar(files_df, batch_size, num_workers, size=32,
 
 
 def make_generators_DF_MNIST(files_df, batch_size, num_workers, size=32, 
-                          path_colname='path', adv_path_colname=None, label=None, return_loc=False, bw=True):
+                          path_colname='path', adv_path_colname=None, label=None, return_loc=False, normalize=True):
     """
     files_df: Dict containing train and val Pandas Dataframes
     """
-    data_transforms = {
+    if normalize:
+        data_transforms = {
         'train': transforms.Compose([
             transforms.Resize(size),
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize(size),
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ]),
+        ])
     }
+    else:
+        data_transforms = {
+        'train': transforms.Compose([
+            transforms.Resize(size),
+            transforms.ToTensor() ]) 
+        }
+    
+    data_transforms['val'] = data_transforms['train']
+
     datasets = {}
     dataloaders = {}
 

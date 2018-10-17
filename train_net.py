@@ -9,6 +9,7 @@ import pickle
 import argparse
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from pathlib import Path
 
 import torch
@@ -17,7 +18,7 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 
 
-from utils.data import make_generators_DF_cifar
+from utils.data import make_generators_DF_cifar, make_generators_DF_MNIST
 from utils.loading import net_from_args
 from utils.train_val import train_epoch, validate_epoch, save_checkpoint
 # from utils.train_val import train_model ### Not sure if right to put the entire training step into a function.
@@ -30,22 +31,25 @@ parser.add_argument('--device', type=str)
 
 # Defining the network:
 parser.add_argument('--net_type', default='wide-resnet', type=str, help='model')
-parser.add_argument('--depth', default=28, type=int, help='depth of model')
+parser.add_argument('--depth', default=18, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0, type=float, help='dropout_rate')
 parser.add_argument('--frac', default=1, type=float, help='frac to reatain in topk')
+parser.add_argument('--dataset', default='MNIST', type=str)
 parser.add_argument('--groups', default=1, type= int, help='number of independent topk groups')
 # training params
 parser.add_argument('--lr', default=0.1, type=float, help='learning_rate')
 parser.add_argument('--epochs', default=300, type=int)
 parser.add_argument('--batch_size', default=128, type=int)
 parser.add_argument('--num_workers', default=4, type=int)
+parser.add_argument('--IM_SIZE', default=32, type= int)
 args = parser.parse_args()
 
 
 def main(args):
     with torch.cuda.device(1):
         epochs, batch_size, lr, num_workers = int(args.epochs), int(args.batch_size), float(args.lr),  int(args.num_workers)
+        IM_SIZE = int(args.IM_SIZE)
         device = torch.device(args.device)
 
         SAVE_PATH = Path(args.SAVE_PATH)
@@ -55,8 +59,13 @@ def main(args):
             files_df = pickle.load(f)
 
         # Make generators:
-        dataloaders = make_generators_DF_cifar(files_df, batch_size, num_workers, size=32, 
-                                                path_colname='path', adv_path_colname=None, return_loc=False)
+        if args.dataset == 'CIFAR10':
+            dataloaders = make_generators_DF_cifar(files_df, batch_size, num_workers, size=IM_SIZE, 
+                                                    path_colname='path', adv_path_colname=None, return_loc=False)
+        elif args.dataset == 'MNIST':
+            dataloaders = make_generators_DF_MNIST(files_df, batch_size, num_workers, size=IM_SIZE,
+                                                    path_colname='path', adv_path_colname=None, return_loc=False, normalize=True)
+
 
         # get the network
         model, model_name = net_from_args(args, num_classes=10, IM_SIZE=32)
@@ -74,15 +83,15 @@ def main(args):
         metrics['val_top1_acc'] = []
         metrics['val_losses'] = []
         best_val_acc = 0
-        
-        for epoch in range(epochs):
+
+        for epoch in tqdm(range(epochs)):
             # train for one epoch
             train_top1_acc, train_losses = train_epoch(dataloaders['train'], model, criterion, optimizer, epoch, device)
             metrics['train_top1_acc'].append(train_top1_acc)
             metrics['train_losses'].append(train_losses)
 
             # evaluate on validation set
-            val_top1_acc, val_losses = validate_epoch(dataloaders['val'], model, criterion, device)
+            val_top1_acc, val_losses = validate_epoch(dataloaders['val'], model, device, criterion=None)
             metrics['val_top1_acc'].append(val_top1_acc)
             metrics['val_losses'].append(val_losses)
             

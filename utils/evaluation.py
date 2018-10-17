@@ -4,7 +4,7 @@ import pickle
 import argparse
 import numpy as np
 import pandas as pd
-
+from tqdm import tqdm
 from pathlib import Path
 
 import torch
@@ -14,6 +14,51 @@ from torch.utils.data.dataset import Dataset
 from PIL import Image
 
 from utils.data import make_generators_DF_cifar
+from models.generative_classify import optimize_latent_cvae, gen_classify_cvae, optimize_latent, gen_classify
+
+
+def eval_gen_cvae(dataloader, model, labels, device, num_times=50, iterations=50, latent_size=16):
+    model.eval()
+    all_results = pd.DataFrame()
+    
+    with torch.no_grad():
+        for i, (tensor_img, label, path) in enumerate(tqdm(dataloader)):
+            path = path[0]
+            
+            tensor_img = tensor_img.to(device)
+            results, predicted_label = gen_classify_cvae(tensor_img, labels, model, num_times=num_times, 
+                                                         iterations=iterations, latent_size=latent_size, 
+                                                         device=device, KLD_weight=1)
+                        
+            for i, true_label in enumerate(label): 
+                all_results = all_results.append({'path': path, 
+                                                  'true_label': int(true_label.cpu().numpy()),
+                                                  'predicted_label': int(predicted_label), 
+                                                 }, ignore_index=True)
+    return all_results
+
+
+
+def eval_gen_vae(dataloader, model_dict, device, num_times=50, iterations=50, latent_size=16):
+    all_results = pd.DataFrame()
+    
+    with torch.no_grad():
+        for i, (tensor_img, label, path) in enumerate(tqdm(dataloader)):
+            path = path[0]
+            
+            tensor_img = tensor_img.to(device)
+            results, predicted_label = gen_classify(tensor_img, model_dict,
+                                          num_times=num_times, iterations=iterations,
+                                          latent_size=latent_size, device=device, KLD_weight=1)
+            
+            
+                        
+            for i, true_label in enumerate(label): 
+                all_results = all_results.append({'path': path, 
+                                                  'true_label': int(true_label.cpu().numpy()),
+                                                  'predicted_label': int(predicted_label), 
+                                                 }, ignore_index=True)
+    return all_results
 
 
 def evaluate_adv_files_df(files_df, denoise_model, device):
