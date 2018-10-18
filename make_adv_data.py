@@ -35,12 +35,13 @@ parser.add_argument('--NEW_PATH', type=str)
 parser.add_argument('--model_loc', type=str)
 parser.add_argument('--attack_type', type=str)
 parser.add_argument('--device', type=str)
+parser.add_argument('--dist', default='L0', type=str)
 args = parser.parse_args()
 
 files_df_loc, NEW_PATH, model_loc, attack_type, device = args.files_df_loc, Path(args.NEW_PATH), args.model_loc, args.attack_type, torch.device(args.device)
+dist = str(dist)
 
-
-def make_adv_data_cifar(files_df_loc, NEW_PATH, model_loc, attack_type, device):
+def make_adv_data_cifar(files_df_loc, NEW_PATH, model_loc, attack_type, dist, device):
     num_workers = 0
     batch_size = 1
 
@@ -98,4 +99,4 @@ def make_adv_data_cifar(files_df_loc, NEW_PATH, model_loc, attack_type, device):
 
 
 if __name__ == '__main__':
-    make_adv_data_cifar(files_df_loc, NEW_PATH, model_loc, attack_type, device)
+    make_adv_data_cifar(files_df_loc, NEW_PATH, model_loc, attack_type, dist, device)

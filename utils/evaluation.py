@@ -52,9 +52,9 @@ def eval_gen_vae(dataloader, model_dict, device, num_times=50, iterations=50, la
                                           latent_size=latent_size, device=device, KLD_weight=1)
             
             
-                        
+    
             for i, true_label in enumerate(label): 
-                all_results = all_results.append({'path': path, 
+                all_results = all_results.append({'path': path,
                                                   'true_label': int(true_label.cpu().numpy()),
                                                   'predicted_label': int(predicted_label), 
                                                  }, ignore_index=True)

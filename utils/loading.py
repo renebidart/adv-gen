@@ -19,6 +19,8 @@ import foolbox
 from foolbox.attacks import FGSM, SinglePixelAttack, BoundaryAttack, LBFGSAttack, ProjectedGradientDescent
 from foolbox.attacks import SaltAndPepperNoiseAttack, AdditiveGaussianNoiseAttack, PointwiseAttack
 
+from foolbox.distances import L0, MSE, Linf
+
 
 from models.cifar import PreActResNet, PResNetReg, PResNetRegNoRelU
 from models.TestNet import TestNetNotResNet, TestNetMostlyResNet
@@ -142,23 +144,32 @@ def net_from_args(args, num_classes, IM_SIZE):
     return net, file_name
 
 
-def get_attack(attack_type, fmodel):
+def get_attack(attack_type, fmodel, distance='L0'):
+    if distance == 'L0':
+        distance = L0
+    elif distance == 'MSE':
+        distance = MSE
+    elif distance == 'Linf':
+        distance = Linf
+    else:
+        print('INVALID DISTANCE!!!')
+
     if (attack_type == 'FGSM'):
-        attack  = foolbox.attacks.FGSM(fmodel)
+        attack  = foolbox.attacks.FGSM(fmodel, distance=distance)
     elif (attack_type == 'SinglePixelAttack'):
-        attack  = foolbox.attacks.SinglePixelAttack(fmodel)
+        attack  = foolbox.attacks.SinglePixelAttack(fmodel, distance=distance)
     elif (attack_type == 'boundary'):
-        attack  = foolbox.attacks.BoundaryAttack(fmodel)
+        attack  = foolbox.attacks.BoundaryAttack(fmodel, distance=distance)
     elif (attack_type == 'lbfgs'):
-        attack  = foolbox.attacks.LBFGSAttack(fmodel)
+        attack  = foolbox.attacks.LBFGSAttack(fmodel, distance=distance)
     elif (attack_type == 'pgd'):
-        attack  = foolbox.attacks.ProjectedGradientDescent(fmodel)
+        attack  = foolbox.attacks.ProjectedGradientDescent(fmodel, distance=distance)
     elif (attack_type == 'saltpepper'):
-        attack  = foolbox.attacks.SaltAndPepperNoiseAttack(fmodel)
+        attack  = foolbox.attacks.SaltAndPepperNoiseAttack(fmodel, distance=distance)
     elif (attack_type == 'gaussian'):
-        attack  = foolbox.attacks.AdditiveGaussianNoiseAttack(fmodel)
+        attack  = foolbox.attacks.AdditiveGaussianNoiseAttack(fmodel, distance=distance)
     elif (attack_type == 'pointwise'):
-        attack  = foolbox.attacks.PointwiseAttack(fmodel)
+        attack  = foolbox.attacks.PointwiseAttack(fmodel, distance=distance)
     else:
         print('Error: Invalid attack_type')
         sys.exit(0)

@@ -68,22 +68,8 @@ class CVAE(nn.Module):
             eps = torch.randn_like(std)
             return eps.mul(std).add_(mu)
 
-    # def loss(self, output, inputs):
-    #     x = inputs
-    #     recon_x, mu, logsigma = output
-    #     BCE = F.mse_loss(recon_x, x, reduction='sum')
-    #     # see Appendix B from VAE paper:
-    #     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
-    #     # https://arxiv.org/abs/1312.6114
-    #     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    #     KLD = -0.5 * torch.sum(1 + 2 * logsigma - mu.pow(2) - (2 * logsigma).exp())
-    #     return BCE + 2*KLD
-
-    def loss(self, output, x, KLD_weight=1, single_batch=False):
+    def loss(self, output, x, KLD_weight=1, info=False):
         recon_x, mu, logvar = output
-        if single_batch: # issue with foolbox, should fix properly???
-            recon_x = torch.squeeze(recon_x).unsqueeze(0)
-
         BCE = F.mse_loss(recon_x, x, reduction='sum')
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -91,6 +77,8 @@ class CVAE(nn.Module):
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD = -0.5 * torch.sum(1 + 2 * logvar - mu.pow(2) - (2 * logvar).exp())
         loss = Variable(BCE+KLD_weight*KLD, requires_grad=True)
+        if info:
+            return loss, BCE, KLD
         return loss
 
     def to_one_hot(self, y):

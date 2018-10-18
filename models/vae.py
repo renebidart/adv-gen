@@ -76,7 +76,7 @@ class VAE(nn.Module):
     #     KLD = -0.5 * torch.sum(1 + 2 * logsigma - mu.pow(2) - (2 * logsigma).exp())
     #     return BCE + KLD
 
-    def loss(self, output, x, KLD_weight=1):
+    def loss(self, output, x, KLD_weight=1, info=False):
         recon_x, mu, logvar = output
         BCE = F.mse_loss(recon_x, x, reduction='sum')
         # see Appendix B from VAE paper:
@@ -85,6 +85,8 @@ class VAE(nn.Module):
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD = -0.5 * torch.sum(1 + 2 * logvar - mu.pow(2) - (2 * logvar).exp())
         loss = Variable(BCE+KLD_weight*KLD, requires_grad=True)
+        if info:
+            return loss, BCE, KLD
         return loss
 
 # what the fuck
