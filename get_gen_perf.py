@@ -34,6 +34,7 @@ parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
 parser.add_argument('--IM_SIZE', default=32, type=int)
 parser.add_argument('--num_workers', default=2, type=int)
 parser.add_argument('--batch_size', default=1, type=int)
+parser.add_argument('--deterministic_forward', dest='deter', action='store_true')
 args = parser.parse_args()
 
 
@@ -41,6 +42,7 @@ def main(args):
     batch_size, lr, num_workers, latent_size = int(args.batch_size), float(args.lr),  int(args.num_workers), int(args.latent_size)
     IM_SIZE, model_loc, num_times, iterations = int(args.IM_SIZE), Path(args.model_loc), int(args.num_times), int(args.iterations)
     device = torch.device(args.device)
+    deter = args.deter
 
     num_workers = 2 ## do 0 if doesnt work
     num_classes = 10
@@ -62,6 +64,7 @@ def main(args):
 
     # Train for each of the labels, here the model_loc is not an actual loc, just the base
     if args.model_type == 'vae':
+        print(f'Loading VAE with Deterministic forward pass: {deter}')
         model_dict = {}
         model_file = Path(model_loc).name
         model_name = model_file.split('-')[0]
@@ -72,35 +75,33 @@ def main(args):
 
         gen_model = GenerativeVAE(model_dict=model_dict, labels=labels, latent_size=latent_size, device=device)
 
-        with torch.no_grad():
-            for i, (tensor_img, label, path) in enumerate(tqdm(dataloaders['val'])):
-                tensor_img, label, file_loc = tensor_img.to(device), label.to(device), path[0]
-                pred = np.argmax(gen_model(tensor_img, iterations=iterations, num_times=num_times).cpu().numpy())
-
-                all_results = all_results.append({'path': path, 
-                                                  'true_label': int(label.cpu().numpy()),
-                                                  'predicted_label': int(pred),
-                                                 }, ignore_index=True)
-
     # If CVAE, load model and predict normally:
     elif args.model_type == 'cvae':
+        print(f'Loading CVAE with Deterministic forward pass: {deter}')
         model = load_net(model_loc).to(device).eval()
         gen_model = GenerativeCVAE(model=model, labels=labels, latent_size=latent_size, device=device).eval()
-        all_results = pd.DataFrame()
 
-        with torch.no_grad():
-            for i, (tensor_img, label, path) in enumerate(tqdm(dataloaders['val'])):
-                tensor_img, label, file_loc = tensor_img.to(device), label.to(device), path[0]
-                pred = np.argmax(gen_model(tensor_img, iterations=iterations, num_times=num_times).cpu().numpy())
 
-                all_results = all_results.append({'path': path, 
-                                                  'true_label': int(label.cpu().numpy()),
-                                                  'predicted_label': int(pred), 
-                                                 }, ignore_index=True)
+    with torch.no_grad():
+        for i, (tensor_img, label, path) in enumerate(tqdm(dataloaders['val'])):
+            tensor_img, label, file_loc = tensor_img.to(device), label.to(device), path[0]
+            preds, results = gen_model(tensor_img, iterations=iterations, num_times=num_times, info=True, deterministic=deter)
+            pred = np.argmax(preds.cpu().numpy())
+            img_results = {} # convert to dict so can add to pandas
+            for ind in labels:
+                img_results[ind] = results[ind]
+            img_results['path'] = path
+            img_results['true_label'] = int(label.cpu().numpy()) 
+            img_results['path'] = path 
+            img_results['predicted_label'] = int(pred)
+            all_results = all_results.append(img_results, ignore_index=True)
             
-
     SAVE_PATH = (str(model_loc).rsplit('-', 1)[:-1][0]+'_iter'+str(iterations)+
-                '_nt'+str(num_times)+'_nsamp'+str(args.df_sample_num)+'_results.pkl')
+                '_nt'+str(num_times)+'_nsamp'+str(args.df_sample_num))
+    if deter:
+        SAVE_PATH = SAVE_PATH +'_deter'
+    SAVE_PATH = SAVE_PATH + '_results.pkl'
+    
     print(f'saving at: {SAVE_PATH}')
     pickle.dump(all_results, open(str(SAVE_PATH), "wb"))
 

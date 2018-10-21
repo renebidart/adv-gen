@@ -29,7 +29,7 @@ class GenerativeCVAE(nn.Module):
 
     def forward(self, img, iterations=50, num_times=100, KLD_weight=1, info=False, deterministic=True): # add in the init?
         lr = .001
-        results = np.tile(1000000000, (num_times, len(self.labels))) # no batch size
+        results = np.tile(0, (num_times, len(self.labels))) # no batch size
         results = torch.from_numpy(results).float().to(self.device)
 
         for trial in range(num_times):
@@ -52,11 +52,14 @@ class GenerativeCVAE(nn.Module):
                     loss.backward()
                     optimizer.step()
                     
-                results[trial, label] = -1 * loss.item() # this is not the correct loss, but will work
+                results[trial, label] = loss.item() # this is not the correct loss, but will work
 
         results = torch.min(results, 0)[0]
-        predictions = F.softmax(results, dim=0)
+        predictions = F.softmax(-1 * results, dim=0) # not correct but works
         predictions = predictions.unsqueeze(0) # add the batch dim
+        
+        if info:
+            return predictions, results.cpu().numpy()
         return predictions
 
 
@@ -76,24 +79,31 @@ class GenerativeVAE(nn.Module):
         self.latent_size = latent_size
         self.device = device
 
-    def forward(self, img, iterations=50, num_times=100, KLD_weight=1, info=False, deterministic=True): # add in the init?
-        lr = .001
-        results = np.tile(-100000, (num_times, len(self.model_dict.keys()))) # no batch size
-        results = torch.from_numpy(results).float().to(self.device)
-
         for label, model in self.model_dict.items():
             model = model.eval()
             for p in model.parameters():
                 p.requires_grad=False
 
+    def forward(self, img, iterations=50, num_times=100, KLD_weight=1, info=False, deterministic=True): # add in the init?
+        lr = .001
+        results = np.tile(0, (num_times, len(self.model_dict.keys()))) # no batch size
+        results = torch.from_numpy(results).float().to(self.device)
+
         for trial in range(num_times):
             for label, model in self.model_dict.items():
+                # rand_mu = np.random.normal(0,1, (1, self.latent_size))
+                # rand_logvar = np.random.normal(0,1, (1, self.latent_size))
+                # mu = torch.from_numpy(rand_mu).float().to(self.device)
+                # logvar = torch.from_numpy(rand_logvar).float().to(self.device)
+
                 rand_mu = np.random.normal(0,1, (1, self.latent_size))
                 rand_logvar = np.random.normal(0,1, (1, self.latent_size))
-                mu = torch.from_numpy(rand_mu).float().to(self.device)
-                logvar = torch.from_numpy(rand_logvar).float().to(self.device)
+                mu = torch.tensor(rand_mu, device=self.device, requires_grad=True).type(torch.cuda.FloatTensor)
+                logvar = torch.tensor(rand_logvar, device=self.device, requires_grad=True).type(torch.cuda.FloatTensor)
+                mu = Variable(mu.data, requires_grad=True)
+                logvar = Variable(logvar.data, requires_grad=True)
 
-                tensor_label = torch.from_numpy(np.array(label)).unsqueeze(0).type(torch.LongTensor).to(self.device)
+                # tensor_label = torch.from_numpy(np.array(label)).unsqueeze(0).type(torch.LongTensor).to(self.device)
                 optimizer = optim.Adam([mu, logvar], lr=lr)
 
                 for i in range(iterations):
@@ -104,12 +114,12 @@ class GenerativeVAE(nn.Module):
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                results[trial, label] = -1 * loss.item() # this is not the correct loss, but will work
+                results[trial, label] = loss.item() # this is not the correct loss, but will work
 
         results = torch.min(results, 0)[0]
-        predictions = F.softmax(results, dim=0)
+        predictions = F.softmax(-1 * results, dim=0) # not correct but works
         predictions = predictions.unsqueeze(0) # add the batch dim
         
         if info:
-            predictions, results
+            return predictions, results.cpu().numpy()
         return predictions

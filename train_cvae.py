@@ -28,7 +28,7 @@ parser.add_argument('--device', type=str)
 
 # Defining the network:
 parser.add_argument('--net_type', default='cvae', type=str, help='model')
-parser.add_argument('--layer_sizes','--list', nargs='+', help='<Required> Set flag', required=True)
+parser.add_argument('--layer_sizes','--list', nargs='+')
 parser.add_argument('--latent_size', default=32, type=int, help='model')
 parser.add_argument('--dropout', default=0, type=float, help='dropout_rate')
 parser.add_argument('--frac', default=1, type=float, help='frac to reatain in topk')
@@ -39,14 +39,15 @@ parser.add_argument('--epochs', default=300, type=int)
 parser.add_argument('--batch_size', default=512, type=int)
 parser.add_argument('--num_workers', default=4, type=int)
 parser.add_argument('--num_labels', default=10, type=int)
-parser.add_argument('--IM_SIZE', default=32, type=int)
+parser.add_argument('--IM_SIZE', default=28, type=int)
 args = parser.parse_args()
 
 
 def main(args):
     # ??? Remove this:
     with torch.cuda.device(1):
-        args.layer_sizes = [int(i) for i in args.layer_sizes]
+        if args.layer_sizes:
+            args.layer_sizes = [int(i) for i in args.layer_sizes]
         epochs, batch_size, lr, num_workers = int(args.epochs), int(args.batch_size), float(args.lr),  int(args.num_workers)
         num_labels, IM_SIZE= int(args.num_labels), int(args.IM_SIZE)
         device = torch.device(args.device)
@@ -63,13 +64,13 @@ def main(args):
                                                     path_colname='path', adv_path_colname=None, return_loc=False)
         elif args.dataset == 'MNIST':
             dataloaders = make_generators_DF_MNIST(files_df, batch_size, num_workers, size=IM_SIZE,
-                                                    path_colname='path', adv_path_colname=None, return_loc=False, bw=True)
+                                                    path_colname='path', adv_path_colname=None, return_loc=False)
 
         # get the network
         model, model_name = vae_from_args(args)
         model = model.to(device)
         print('next(model.parameters()).device', next(model.parameters()).device)
-        print(f'--------- Training: {model_name} with layer sizes {args.layer_sizes} ---------')
+        print(f'--------- Training: {model_name} ---------')
 
         # get training parameters and train:
         optimizer = optim.Adam(model.parameters(), lr=lr)

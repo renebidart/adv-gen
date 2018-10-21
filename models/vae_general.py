@@ -25,11 +25,6 @@ class VAE_ABS(nn.Module):
         self.enc_bn2 = nn.BatchNorm2d(32)
         self.enc_bn3 = nn.BatchNorm2d(64)
 
-        # self.dec_conv1 = nn.ConvTranspose2d(16, 32, kernel_size=4, stride=1, padding=1,  output_padding=0, bias=False)
-        # self.dec_conv2 = nn.ConvTranspose2d(32, 16, kernel_size=5, stride=2, padding=2,  output_padding=0, bias=False)
-        # self.dec_conv3 = nn.ConvTranspose2d(16, 16, kernel_size=5, stride=2, padding=2,  output_padding=0, bias=False)
-        # self.dec_conv4 = nn.ConvTranspose2d(16, 1, kernel_size=3, stride=1, padding=1,  output_padding=0, bias=True)
-        # guess at what to do
         self.dec_conv1 = nn.ConvTranspose2d(16, 32, kernel_size=4, stride=1, padding=2,  output_padding=0, bias=False)
         self.dec_conv2 = nn.ConvTranspose2d(32, 16, kernel_size=5, stride=2, padding=1,  output_padding=1, bias=False)
         self.dec_conv3 = nn.ConvTranspose2d(16, 16, kernel_size=5, stride=2, padding=2,  output_padding=1, bias=False)
@@ -43,9 +38,9 @@ class VAE_ABS(nn.Module):
         self.fc_logvar= nn.Linear(self.linear_size, self.latent_size)
         self.fc_dec = nn.Linear(self.latent_size, self.linear_size)
 
-    def forward(self, x, training=True):
+    def forward(self, x, deterministic=False):
         mu, logvar = self.encode(x)
-        z = self.reparameterize(mu, logvar)
+        z = self.reparameterize(mu, logvar, deterministic)
         recon_x = self.decode(z)
         return recon_x, mu, logvar
 

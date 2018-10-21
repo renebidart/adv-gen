@@ -95,36 +95,37 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, device):
 
 
 def validate_epoch(val_loader, model, device='cpu', criterion=None):
-    batch_time = AverageMeter()
-    losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
+    with torch.cuda.device(device.index):
+        batch_time = AverageMeter()
+        losses = AverageMeter()
+        top1 = AverageMeter()
+        top5 = AverageMeter()
 
-    # switch to evaluate mode
-    model.eval()
+        # switch to evaluate mode
+        model.eval()
 
-    with torch.no_grad():
-        end = time.time()
-        for i, (inputs, target)  in enumerate(val_loader):
-            inputs, target = inputs.to(device), target.type(torch.LongTensor).to(device)
-            output = model(inputs)
-            if criterion:
-                loss = criterion(output, target)
-
-            # measure accuracy and record loss
-            prec1, prec5 = accuracy(output, target, topk=(1, 5))
-            if criterion:
-                losses.update(loss.item(), inputs.size(0))
-            top1.update(prec1[0], inputs.size(0))
-            top5.update(prec5[0], inputs.size(0))
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
+        with torch.no_grad():
             end = time.time()
+            for i, (inputs, target)  in enumerate(val_loader):
+                inputs, target = inputs.to(device), target.type(torch.LongTensor).to(device)
+                output = model(inputs)
+                if criterion:
+                    loss = criterion(output, target)
 
-    print(f'VALID:  * TOP1 {top1.avg:.3f} TOP5 {top5.avg:.3f} Loss ({losses.avg:.4f})\t',
-            f'Time ({batch_time.avg:.3f})\t')
-    return top1.avg, losses.avg
+                # measure accuracy and record loss
+                prec1, prec5 = accuracy(output, target, topk=(1, 5))
+                if criterion:
+                    losses.update(loss.item(), inputs.size(0))
+                top1.update(prec1[0], inputs.size(0))
+                top5.update(prec5[0], inputs.size(0))
+
+                # measure elapsed time
+                batch_time.update(time.time() - end)
+                end = time.time()
+
+        print(f'VALID:  * TOP1 {top1.avg:.3f} TOP5 {top5.avg:.3f} Loss ({losses.avg:.4f})\t',
+                f'Time ({batch_time.avg:.3f})\t')
+        return top1.avg, losses.avg
 
 
 def save_checkpoint(state, is_best, model_name, PATH):

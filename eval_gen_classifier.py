@@ -55,7 +55,7 @@ def main(args):
                                                     path_colname='path', adv_path_colname=None, label=None, return_loc=True)
         elif args.dataset == 'MNIST':
             dataloaders = make_generators_DF_MNIST(files_df, batch_size, num_workers, size=IM_SIZE,
-                                                    path_colname='path', adv_path_colname=None, label=None, return_loc=True)
+                                                    path_colname='path', adv_path_colname=None, label=None, return_loc=True, normalize=True)
 
         # Train for each of the labels, here the model_loc is not an actual loc, just the base
         if args.model_type == 'vae':

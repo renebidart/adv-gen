@@ -37,6 +37,9 @@ parser.add_argument('--dropout', default=0, type=float, help='dropout_rate')
 parser.add_argument('--frac', default=1, type=float, help='frac to reatain in topk')
 parser.add_argument('--dataset', default='MNIST', type=str)
 parser.add_argument('--groups', default=1, type= int, help='number of independent topk groups')
+parser.add_argument('--topk_num', default=10, type= int, help='num to retain in topk')
+parser.add_argument('--num_filters', default=10, type= int, help='num filters in last compression conv layer')
+
 # training params
 parser.add_argument('--lr', default=0.1, type=float, help='learning_rate')
 parser.add_argument('--epochs', default=300, type=int)
@@ -70,7 +73,7 @@ def main(args):
         # get the network
         model, model_name = net_from_args(args, num_classes=10, IM_SIZE=32)
         model = model.to(device)
-        print(f'--------- Training: {model_name} with depth {args.depth} ---------')
+        print(f'--------- Training: {model_name} ---------')
 
         # get training parameters and train:
         criterion = nn.CrossEntropyLoss()

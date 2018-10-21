@@ -1,6 +1,3 @@
-"""
-"""
-
 import os
 import sys
 import pickle
@@ -25,6 +22,7 @@ parser.add_argument('--files_df_loc', type=str)
 parser.add_argument('--SAVE_PATH', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--device', type=str)
+parser.add_argument('--encoding_model_loc', type=str)
 
 # Defining the network:
 parser.add_argument('--net_type', default='vae', type=str, help='model')
@@ -33,6 +31,8 @@ parser.add_argument('--latent_size', default=32, type=int, help='model')
 parser.add_argument('--dropout', default=0, type=float, help='dropout_rate')
 parser.add_argument('--frac', default=1, type=float, help='frac to reatain in topk')
 parser.add_argument('--groups', default=1, type= int, help='number of independent topk groups')
+parser.add_argument('--num_features', default=1, type= int, help='number of independent topk groups')
+
 # training params
 parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
 parser.add_argument('--epochs', default=300, type=int)
@@ -57,21 +57,20 @@ def main(args):
         with open(args.files_df_loc, 'rb') as f:
             files_df = pickle.load(f)
 
-
         # Train for each of the labels:
         for label in range(num_labels):
             if args.dataset == 'CIFAR10':
-                dataloaders = make_generators_DF_cifar(files_df, batch_size, num_workers, size=IM_SIZE, 
+                dataloaders = make_generators_DF_cifar(files_df, batch_size, num_workers, size=IM_SIZE,
                                                         path_colname='path', adv_path_colname=None, label=label, return_loc=False)
             elif args.dataset == 'MNIST':
                 dataloaders = make_generators_DF_MNIST(files_df, batch_size, num_workers, size=IM_SIZE,
-                                                        path_colname='path', adv_path_colname=None, label=label, return_loc=False, bw=True)
+                                                        path_colname='path', adv_path_colname=None, label=label, return_loc=False)
 
             # get the network
             model, model_name = vae_from_args(args)
             model = model.to(device)
             print('next(model.parameters()).device', next(model.parameters()).device)
-            print(f'--------- Training: {model_name} with layer sizes {args.layer_sizes} ---------')
+            print(f'--------- Training: {model_name} ---------')
 
             # get training parameters and train:
             optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -80,7 +79,7 @@ def main(args):
             metrics = {}
             metrics['train_losses'] = []
             metrics['val_losses'] = []
-            best_val_loss = 1000000
+            best_val_loss = 100000000
             criterion = model.loss
 
             for epoch in range(epochs):
