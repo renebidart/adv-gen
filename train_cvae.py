@@ -72,9 +72,12 @@ def main(args):
         print('next(model.parameters()).device', next(model.parameters()).device)
         print(f'--------- Training: {model_name} ---------')
 
+        for p in model.parameters():
+            p.requires_grad=True
+
         # get training parameters and train:
         optimizer = optim.Adam(model.parameters(), lr=lr)
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/3), gamma=0.4) # close enough
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/3), gamma=0.3) # close enough
         
         metrics = {}
         metrics['train_losses'] = []

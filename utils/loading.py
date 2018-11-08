@@ -30,13 +30,17 @@ from models.vae_general import VAE_ABS
 from models.Nets import SimpleNetMNIST, TopkNetMNIST
 from models.FeatureVAE import FEAT_VAE_MNIST
 
+from models.cvae import CVAE_ART
+from models.vae_conv_layer import ConvVAE2d, CVAE_SMALL
+
+
 def vae_from_args(args):
     if (args.net_type == 'cvae'):
         net = CVAE(num_labels=args.num_labels, latent_size=args.latent_size, img_size=args.IM_SIZE,
                     layer_sizes=args.layer_sizes)
         sizes_str =  "_".join(str(x) for x in args.layer_sizes)
         file_name = 'CVAE-'+str(sizes_str)+'-'+str(args.latent_size)+'-'+str(args.dataset)+'-'+str(args.num_labels)
-    if (args.net_type == 'vae'):
+    elif (args.net_type == 'vae'):
         net = VAE(latent_size=args.latent_size, img_size=args.IM_SIZE, layer_sizes=args.layer_sizes)
         sizes_str =  "_".join(str(x) for x in args.layer_sizes)
         file_name = 'VAE-'+str(sizes_str)+'-'+str(args.latent_size)+'-'+str(args.dataset)
@@ -45,7 +49,7 @@ def vae_from_args(args):
         file_name = 'VAE_ABS-'+str(args.latent_size)+'-'+str(args.dataset)
 
     elif (args.net_type == 'FEAT_VAE_MNIST'):
-        net = FEAT_VAE_MNIST(encoding_model=load_net(args.encoding_model_loc).to(args.device),
+        net = FEAT_VAE_MNIST(classifier_model=load_net(args.encoding_model_loc).to(args.device),
                              num_features=args.num_features,
                              latent_size=args.latent_size)
         file_name = 'FEAT_VAE_MNIST-'+str(args.latent_size)+'-'+str(args.num_features)+'-'+str(args.dataset)
@@ -56,13 +60,33 @@ def vae_from_args(args):
                        num_labels=args.num_labels
                        )
         file_name = 'CVAE_ABS-'+str(args.latent_size)+'-'+str(args.dataset)
+
+    if (args.net_type == 'CVAE_ART'):
+        net = CVAE_ART(latent_size=args.latent_size, 
+                       img_size=args.IM_SIZE,
+                       num_labels=args.num_labels)
+        file_name = 'CVAE_ART-'+str(args.latent_size)+'-'+str(args.IM_SIZE)
+
+    elif (args.net_type == 'ConvVAE2d'):
+        if (args.small_net_type == 'CVAE_SMALL'):
+            small_net = CVAE_SMALL(latent_size=args.latent_size_small_vae, 
+                                   img_size=args.cvae_input_sz,
+                                   num_labels=args.num_labels)
+
+        net = ConvVAE2d(cvae_small=small_net, 
+                        cvae_input_sz=args.cvae_input_sz,
+                        stride = args.stride,
+                        img_size=args.IM_SIZE)
+        file_name = 'ConvVAE2d-'+str(args.IM_SIZE)+'-'+str(args.stride)+'-'+str(args.cvae_input_sz)+'-'+str(args.latent_size_small_vae)
+
+
     else:
         print('Error : Wrong net type')
         sys.exit(0)
     return net, file_name
 
 
-def load_net(model_loc):
+def load_net(model_loc, args=None):
     model_file = Path(model_loc).name
     model_name = model_file.split('-')[0]
 
@@ -89,13 +113,24 @@ def load_net(model_loc):
                         topk_num=int(model_file.split('-')[2].split('_')[0]))
 
     elif (model_name == 'FEAT_VAE_MNIST'):
-        model = VAE_ABS(latent_size=8, img_size=28)
+        model = FEAT_VAE_MNIST(classifier_model=load_net(args.encoding_model_loc).to(args.device),
+                             num_features=int(model_file.split('-')[2].split('_')[0]),
+                             latent_size=int(model_file.split('-')[1].split('_')[0]))
 
-    elif (args.net_type == 'FEAT_VAE_MNIST'):
-        model = FEAT_VAE_MNIST(encoding_model=load_net(args.encoding_model_loc).to(args.device),
-                             num_features=args.num_features,
-                             latent_size=args.latent_size)
-        file_name = 'FEAT_VAE_MNIST-'+str(args.latent_size)+'-'+str(args.num_features)+'-'+str(args.dataset)
+    elif (model_name == 'ConvVAE2d'):
+        latent_size_small_vae = int(model_file.split('-')[4].split('_')[0])
+        cvae_input_sz = int(model_file.split('-')[3])
+        stride = int(model_file.split('-')[2])
+        IM_SIZE = int(model_file.split('-')[1])
+
+        small_net = CVAE_SMALL(latent_size=latent_size_small_vae, 
+                       img_size=cvae_input_sz,
+                       num_labels=11)
+
+        model = ConvVAE2d(cvae_small=small_net, 
+                        cvae_input_sz=cvae_input_sz,
+                        stride = stride,
+                        img_size=IM_SIZE)
 
     else:
         print(f'Error : {model_file} not found')
@@ -151,7 +186,7 @@ def net_from_args(args, num_classes, IM_SIZE):
         file_name = 'TopkNetMNIST-'+str(args.num_filters)+'-'+str(args.topk_num)
 
     else:
-        print('Error : Wrong net type')
+        # print('Error : Wrong net type')
         sys.exit(0)
     return net, file_name
 

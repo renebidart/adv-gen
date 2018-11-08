@@ -58,7 +58,6 @@ def show_imgs(imgs, labels, cols = 3):
 
 
 
-
 # def load_image(img_path, size=32):
 #     """Load jpg image into format for Foolbox"""
 #     img = np.asarray(Image.open(img_path).convert('RGB').resize((size, size), Image.ANTIALIAS))

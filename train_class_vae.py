@@ -74,7 +74,7 @@ def main(args):
 
             # get training parameters and train:
             optimizer = optim.Adam(model.parameters(), lr=lr)
-            scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/3), gamma=0.4) # close enough
+            scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/4), gamma=0.2) # close enough
             
             metrics = {}
             metrics['train_losses'] = []
@@ -105,7 +105,10 @@ def main(args):
                     'metrics': metrics,
                 }, is_best, model_name+'_label_'+str(label), SAVE_PATH)
 
-            pickle.dump(metrics, open(str(SAVE_PATH)+'/'+str(model_name)+'_label_'+str(label)+'_metrics.pkl', "wb"))
+            RESULT_PATH = str(SAVE_PATH)+'/'+str(model_name)+'_label_'+str(label)+'_metrics.pkl'
+            print('Saving results at:', RESULT_PATH)
+
+            pickle.dump(metrics, open(RESULT_PATH, "wb"))
 
 
 if __name__ == '__main__':

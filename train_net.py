@@ -45,7 +45,7 @@ parser.add_argument('--lr', default=0.1, type=float, help='learning_rate')
 parser.add_argument('--epochs', default=300, type=int)
 parser.add_argument('--batch_size', default=128, type=int)
 parser.add_argument('--num_workers', default=4, type=int)
-parser.add_argument('--IM_SIZE', default=32, type= int)
+parser.add_argument('--IM_SIZE', default=28, type= int)
 args = parser.parse_args()
 
 
@@ -71,14 +71,14 @@ def main(args):
 
 
         # get the network
-        model, model_name = net_from_args(args, num_classes=10, IM_SIZE=32)
+        model, model_name = net_from_args(args, num_classes=10, IM_SIZE=IM_SIZE)
         model = model.to(device)
         print(f'--------- Training: {model_name} ---------')
 
         # get training parameters and train:
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/3), gamma=0.1) # close enough
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=int(epochs/3), gamma=0.2) # close enough
         
         metrics = {}
         metrics['train_top1_acc'] = []

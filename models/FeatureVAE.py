@@ -9,9 +9,9 @@ class FEAT_VAE_MNIST(nn.Module):
 
     should the first fc in deconv be making the output batch*8*7*7???
     """
-    def __init__(self, encoding_model, latent_size=6, num_features=None):
+    def __init__(self, classifier_model, latent_size=6, num_features=None):
         super(FEAT_VAE_MNIST, self).__init__()
-        self.encoding_model = encoding_model.eval()
+        self.classifier_model = classifier_model.eval()
         
         self.num_features = num_features
         self.latent_size = latent_size
@@ -34,12 +34,13 @@ class FEAT_VAE_MNIST(nn.Module):
         self.fc_logvar= nn.Linear(self.linear_size, self.latent_size)
         self.fc_dec = nn.Linear(self.latent_size, self.linear_size)
 
-        for p in self.encoding_model.parameters():
+        for p in self.classifier_model.parameters():
             p.requires_grad=False
+        self.has_grad = False
 
 
     def forward(self, x, label, deterministic=False):  # label actually doesn't do anything, just for consistency with other cvae?
-        x = self.encoding_model.encode_feat(x)
+        x = self.classifier_model.encode_feat(x)
         mu, logvar = self.encode(x)
         z = self.reparameterize(mu, logvar, deterministic)
         recon_x = self.decode(z)
@@ -58,7 +59,7 @@ class FEAT_VAE_MNIST(nn.Module):
         x = self.elu(self.dec_bn1(self.dec_conv1(x)))
         x = self.elu(self.dec_bn2(self.dec_conv2(x)))
         x = self.dec_conv3(x)
-        return torch.sigmoid(x)
+        return torch.tanh(x)
 
     def reparameterize(self, mu, logvar, deterministic=False):
         if deterministic:
@@ -70,15 +71,30 @@ class FEAT_VAE_MNIST(nn.Module):
 
     def loss(self, output, x, KLD_weight=1, info=False):
         """Compute the loss between the encoded features, and the generated features, not the image"""
-        x = self.encoding_model.encode_feat(x)
         recon_x, mu, logvar = output
+        x = self.classifier_model.encode_feat(x)
+
         BCE = F.mse_loss(recon_x, x, reduction='sum')
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
         # https://arxiv.org/abs/1312.6114
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD = -0.5 * torch.sum(1 + 2 * logvar - mu.pow(2) - (2 * logvar).exp())
-        loss = Variable(BCE+KLD_weight*KLD, requires_grad=True)
-        if info:
-            return loss, BCE, KLD
-        return loss
+        # loss = Variable(BCE+KLD_weight*KLD, requires_grad=True)
+
+        # # print('------------------------------------------')
+        # # print('mu, logvar', mu, logvar)
+        # # print('torch.mean(x)', torch.mean(x))
+        # # print('torch.max(x)', torch.max(x))
+        # # print('torch.min(x)', torch.min(x))
+
+        # # print('torch.mean(recon_x)', torch.mean(recon_x))
+        # # print('torch.max(recon_x)', torch.max(recon_x))
+        # # print('torch.min(recon_x)', torch.min(recon_x))
+        # # print('KLD:', KLD)
+        # # print('BCE:', BCE)
+
+        # if info:
+        #     return loss, BCE, KLD
+        # return loss
+        return BCE+KLD

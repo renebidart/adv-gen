@@ -17,11 +17,12 @@ import torch
 
 from utils.data import make_generators_DF_MNIST
 from utils.loading import load_net
-from models.gen_classifiers import GenerativeCVAE, GenerativeVAE
+from models.gen_classifiers import GenerativeCVAE, GenerativeVAE, GenerativeFeatVAE
 
 parser = argparse.ArgumentParser(description='Training')
 parser.add_argument('--files_df_loc', type=str)
-parser.add_argument('--model_loc', type=str) # vae, cvae
+parser.add_argument('--model_loc', type=str)
+parser.add_argument('--encoding_model_loc', type=str)
 parser.add_argument('--model_type', type=str) # vae, cvae
 
 parser.add_argument('--device', type=str)
@@ -31,7 +32,7 @@ parser.add_argument('--iterations', type=int, default=50)
 parser.add_argument('--latent_size', type=int, default=16)
 parser.add_argument('--df_sample_num', default=100, type=int)
 parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
-parser.add_argument('--IM_SIZE', default=32, type=int)
+parser.add_argument('--IM_SIZE', default=28, type=int)
 parser.add_argument('--num_workers', default=2, type=int)
 parser.add_argument('--batch_size', default=1, type=int)
 parser.add_argument('--deterministic_forward', dest='deter', action='store_true')
@@ -63,7 +64,7 @@ def main(args):
                                                 path_colname='path', adv_path_colname=None, return_loc=True, normalize=True)
 
     # Train for each of the labels, here the model_loc is not an actual loc, just the base
-    if args.model_type == 'vae':
+    if args.model_type == 'vae' or args.model_type == 'feat_vae':
         print(f'Loading VAE with Deterministic forward pass: {deter}')
         model_dict = {}
         model_file = Path(model_loc).name
@@ -71,14 +72,20 @@ def main(args):
         for label in labels:
             model_file_cr = model_file + '_label_'+str(label)+'_model_best.pth.tar'
             model_loc_cr = str(model_loc.parent / model_file_cr)
-            model_dict[label] = load_net(model_loc_cr).to(device).eval()
+            model_dict[label] = load_net(model_loc_cr, args).to(device).eval()
+        
+        if args.model_type == 'vae':
+            gen_model = GenerativeVAE(model_dict=model_dict, labels=labels, latent_size=latent_size, device=device)
+        elif args.model_type == 'feat_vae':
+            gen_model = GenerativeFeatVAE(model_dict=model_dict, labels=labels, latent_size=latent_size, device=device)
+        else:
+            print("Invalid model_type")
 
-        gen_model = GenerativeVAE(model_dict=model_dict, labels=labels, latent_size=latent_size, device=device)
 
     # If CVAE, load model and predict normally:
     elif args.model_type == 'cvae':
         print(f'Loading CVAE with Deterministic forward pass: {deter}')
-        model = load_net(model_loc).to(device).eval()
+        model = load_net(model_loc, args).to(device).eval()
         gen_model = GenerativeCVAE(model=model, labels=labels, latent_size=latent_size, device=device).eval()
 
 

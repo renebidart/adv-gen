@@ -37,6 +37,7 @@ class VAE_ABS(nn.Module):
         self.fc_mu = nn.Linear(self.linear_size, self.latent_size)
         self.fc_logvar= nn.Linear(self.linear_size, self.latent_size)
         self.fc_dec = nn.Linear(self.latent_size, self.linear_size)
+        self.has_grad = False
 
     def forward(self, x, deterministic=False):
         mu, logvar = self.encode(x)
